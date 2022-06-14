@@ -1,1 +1,5 @@
-# Titanic_Kaggle
+# Kaggle_Contest
+
+## Description
+
+### what is it
