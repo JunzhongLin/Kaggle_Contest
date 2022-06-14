@@ -9,7 +9,7 @@ import scipy.stats as ss
 import seaborn as sns
 import math
 from collections import Counter
-from src._private import remove_incomplete_samples, replace_nan_with_value
+from _private import remove_incomplete_samples, replace_nan_with_value
 
 _REPLACE = 'replace'
 _DROP = 'drop'
