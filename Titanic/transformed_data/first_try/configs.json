@@ -1,0 +1,29 @@
+{
+    "num_cols": [
+        "Age",
+        "SibSp",
+        "Parch",
+        "Fare"
+    ],
+    "cat_cols": [
+        "Pclass",
+        "Sex",
+        "Embarked"
+    ],
+    "encoder_params": {
+        "handle_unknown": "error"
+    },
+    "num_imputer_params": {
+        "strategy": "mean"
+    },
+    "cat_imputer_params": {
+        "strategy": "most_frequent"
+    },
+    "output_folder": "first_try",
+    "outlier_detect_params": {
+        "contamination": "auto"
+    },
+    "remove_outlier": false,
+    "threshold": -10.0,
+    "short_description": "this is a test for preprocessing"
+}
