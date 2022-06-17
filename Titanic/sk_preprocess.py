@@ -10,6 +10,7 @@ from collections import defaultdict
 from sklearn.impute import SimpleImputer
 from sklearn.neighbors import LocalOutlierFactor
 import pickle, json
+from joblib import load, dump
 
 
 class DataframeSelector(BaseEstimator, TransformerMixin):
@@ -136,11 +137,11 @@ def main(num_cols, cat_cols, encoder_params,
     if not os.path.exists(saved_path):
         os.makedirs(saved_path)
 
-    names = ['X_train.pickle', 'X_test.pickle', 'y_train.pickle']
+    names = ['X_train.pkl', 'X_test.pkl', 'y_train.pkl']
     data_sets = [X_train, X_test, y_train]
     for name, data in zip(names, data_sets):
         with open(os.path.join(saved_path, name), 'wb') as f:
-            pickle.dump(data, f)
+            dump(data, f)
 
     return None
 
