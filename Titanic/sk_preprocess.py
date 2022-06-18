@@ -92,33 +92,29 @@ class OutlierExtractor(BaseEstimator, TransformerMixin):
         return self
 
 
-def main(num_cols, cat_cols, encoder_params,
-         num_imputer_params, cat_imputer_params,
-         output_folder,
-         outlier_detect_params, remove_outlier=False, threshold=-10.0,
-         short_description=None):
+def main(output_folder, remove_outlier=False, outlier_detect_params=None, outlier_threshold=-10.0,
+         **kwargs):
+    # initiate the pipelines
+    pipelines = []
+
     # load data from csv file
 
     train_data = pd.read_csv('./Titanic/data/train.csv')
     test_data = pd.read_csv('./Titanic/data/test.csv')
 
-    # Build Pipline
+    # build pipelines
+    for idx, key in enumerate(kwargs.keys()):
+        sel_cols = key.split(',')
+        pipeline = Pipeline([
+            ('selector', DataframeSelector(sel_cols))
+        ] + [(transformer_name, globals()[transformer_name](**kwargs[key][transformer_name]))
+             for transformer_name in kwargs[key].keys()]
+        )
+        pipelines.append((key, pipeline))
 
-    num_pipeline = Pipeline([
-        ('selector', DataframeSelector(num_cols)),
-        ('imputer', SimpleImputer(**num_imputer_params)),
-    ])
+    full_pipeline = FeatureUnion(pipelines)
 
-    cat_pipeline = Pipeline([
-        ('selector', DataframeSelector(cat_cols)),
-        ('imputer', SimpleImputer(**cat_imputer_params)),
-        ('ordinalencoder', OrdinalEncoder(**encoder_params))
-    ])
-
-    full_pipeline = FeatureUnion([
-        ('num_pipeline', num_pipeline),
-        ('cat_pipline', cat_pipeline)
-    ])
+    # transform data
 
     # Generate train, test set
     X_train = full_pipeline.fit_transform(train_data)
@@ -129,8 +125,8 @@ def main(num_cols, cat_cols, encoder_params,
     if remove_outlier:
         lcf = LocalOutlierFactor(**outlier_detect_params)
         lcf.fit(X_train)
-        X_train = X_train[lcf.negative_outlier_factor_ > threshold, :]
-        y_train = y_train[lcf.negative_outlier_factor_ > threshold]
+        X_train = X_train[lcf.negative_outlier_factor_ > outlier_threshold, :]
+        y_train = y_train[lcf.negative_outlier_factor_ > outlier_threshold]
 
     # save the data
     saved_path = os.path.join('./Titanic/transformed_data', output_folder)
@@ -148,30 +144,46 @@ def main(num_cols, cat_cols, encoder_params,
 
 if __name__ == '__main__':
 
-    config_kwargs = {
-        'num_cols': ['Age', 'SibSp', 'Parch', 'Fare'],
-        'cat_cols': ['Pclass', 'Sex', 'Embarked'],
-        'encoder_params': {'handle_unknown': 'error'},
-        'num_imputer_params': {'strategy': 'mean'},
-        'cat_imputer_params': {'strategy': 'most_frequent'},
-        'output_folder': 'first_try',
-        'outlier_detect_params': {'contamination': 'auto'},
+    outlier_setting = {
         'remove_outlier': False,
-        'threshold': -10.0,
-        'short_description': 'this is a test for preprocessing'
+        'outlier_detect_params': None,
+        'outlier_threshold': -10.0
     }
 
+    config_kwargs = {
+        'Age,SibSp,Parch,Fare': {
+            'SimpleImputer': {
+                'strategy': 'mean'
+            }
+        },
+        'Pclass,Sex,Embarked': {
+            'SimpleImputer': {
+                'strategy': 'most_frequent'
+            },
+            'OrdinalEncoder': {
+                'handle_unknown': 'error'
+            }
+        }
+
+
+
+    }
     # save the preprocessed data
-    main(**config_kwargs)
+    output_folder = 'second_try'
+    main(output_folder, **outlier_setting, **config_kwargs)
 
     # save the config json file for documentation
     saved_config_file = os.path.join(
         './Titanic/transformed_data/',
-        config_kwargs['output_folder'],
+        output_folder,
         'configs.json'
     )
+
+    # add outlier setting for documentation
+    config_kwargs['outlier_setting'] = outlier_setting
     with open(saved_config_file, 'w') as f:
         json.dump(config_kwargs, f, indent=4)
+
 
 
 

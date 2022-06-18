@@ -1,13 +1,11 @@
-def test(a,b,c):
-    return a+b+c
 
+def test(x, e=1, **kwargs):
+    print(kwargs)
 
-if __name__ =='__main__':
-    kwargs= {
-        'a': 1,
-        'b': 2,
-        'c': 3,
-        'd': 4
-    }
+kw = {
+    'a': 1,
+    'b': 2,
+    'c': 3
+}
 
-    print(test(**kwargs))
+test(3,**kw)
