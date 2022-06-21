@@ -16,8 +16,10 @@ class BaseProcessor:
         self.target = None
         self.project_folder = None
         self.global_dict = {}
+        self.output_folder = None
+        self.kwargs = None
 
-    def process(self, output_folder, remove_outlier=False,
+    def process(self, remove_outlier=False,
                 outlier_detect_params=None, outlier_threshold=-10.0,
                 **kwargs):
 
@@ -38,49 +40,60 @@ class BaseProcessor:
         full_pipeline = FeatureUnion(pipelines)
 
         # Generate train, test set
-        X_train = full_pipeline.fit_transform(self.train_data)
-        y_train = self.train_data[self.target].values
-        X_test = full_pipeline.transform(self.test_data)
+        X_data = self.train_data.append(self.test_data)
+        full_pipeline.fit(X_data)
+        self.X_train = full_pipeline.transform(self.train_data)
+        self.y_train = self.train_data[self.target].values
+        self.X_test = full_pipeline.transform(self.test_data)
 
         # Remove outlier if needed
         if remove_outlier:
             lcf = LocalOutlierFactor(**outlier_detect_params)
-            lcf.fit(X_train)
-            X_train = X_train[lcf.negative_outlier_factor_ > outlier_threshold, :]
-            y_train = y_train[lcf.negative_outlier_factor_ > outlier_threshold]
-
-        # save the data
-        saved_path = os.path.join(self.project_folder, output_folder)
-        if not os.path.exists(saved_path):
-            os.makedirs(saved_path)
-
-        names = ['X_train.pkl', 'X_test.pkl', 'y_train.pkl']
-        data_sets = [X_train, X_test, y_train]
-        for name, data in zip(names, data_sets):
-            with open(os.path.join(saved_path, name), 'wb') as f:
-                dump(data, f)
-
-        # Save the Config information for documentation purpose:
-        saved_config_file = os.path.join(
-            './Titanic/transformed_data/',
-            output_folder,
-            'configs.json'
-        )
+            lcf.fit(self.X_train)
+            self.X_train = self.X_train[lcf.negative_outlier_factor_ > outlier_threshold, :]
+            self.y_train = self.y_train[lcf.negative_outlier_factor_ > outlier_threshold]
 
         # add outlier setting for documentation
-        kwargs['outlier_setting'] = {
+        self.kwargs = kwargs
+        self.kwargs['outlier_setting'] = {
             'remove_outlier': remove_outlier,
             'outlier_detect_params': outlier_detect_params,
             'outlier_threshold': outlier_threshold
         }
         # add final output features
-        kwargs['final_features'] = self.final_features
-
-        with open(saved_config_file, 'w') as f:
-            json.dump(kwargs, f, indent=4)
+        self.kwargs['final_features'] = self.final_features
 
         return None
 
-    def save_configs(self):
+    def save_data(self,):
+        # save the data
+        saved_path = os.path.join(self.project_folder, self.output_folder)
+        if not os.path.exists(saved_path):
+            os.makedirs(saved_path)
 
-        pass
+        names = ['X_train.pkl', 'X_test.pkl', 'y_train.pkl']
+        data_sets = [self.X_train, self.X_test, self.y_train]
+        for name, data in zip(names, data_sets):
+            with open(os.path.join(saved_path, name), 'wb') as f:
+                dump(data, f)
+
+        print('Preprocessed data saved in {}'.format(
+            saved_path
+        ))
+        return None
+
+    def save_log(self):
+        # Save the Config information for documentation purpose:
+        saved_config_file = os.path.join(
+            './Titanic/transformed_data/',
+            self.output_folder,
+            'configs.json'
+        )
+        with open(saved_config_file, 'w') as f:
+            json.dump(self.kwargs, f, indent=4)
+
+        print('Preprocess configs saved in {}'.format(
+            saved_config_file
+        ))
+
+        return None
