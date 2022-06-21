@@ -15,6 +15,7 @@ class BaseProcessor:
         self.final_features = {}
         self.target = None
         self.project_folder = None
+        self.global_dict = {}
 
     def process(self, output_folder, remove_outlier=False,
                 outlier_detect_params=None, outlier_threshold=-10.0,
@@ -26,7 +27,7 @@ class BaseProcessor:
         for idx, key in enumerate(kwargs.keys()):
 
             pipeline = Pipeline(
-                [(transformer_name, globals()[transformer_name](**kwargs[key][transformer_name]))
+                [(transformer_name, self.global_dict[transformer_name](**kwargs[key][transformer_name]))
                  for transformer_name in list(kwargs[key].keys())[:-1]]
                                 )
             pipelines.append((key, pipeline))
