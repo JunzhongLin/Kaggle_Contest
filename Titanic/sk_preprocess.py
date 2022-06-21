@@ -1,3 +1,4 @@
+from typing import List
 import os.path
 
 from sklearn.model_selection import StratifiedShuffleSplit
@@ -7,7 +8,7 @@ from sklearn.preprocessing import OrdinalEncoder
 import numpy as np
 import pandas as pd
 from collections import defaultdict
-from sklearn.impute import SimpleImputer
+from sklearn.impute import SimpleImputer, KNNImputer
 from sklearn.neighbors import LocalOutlierFactor
 import pickle, json
 from joblib import load, dump
@@ -24,7 +25,7 @@ class DataframeSelector(BaseEstimator, TransformerMixin):
         return self
 
     def transform(self, X: pd.DataFrame, y=None):
-        return X[self.feature_names].values
+        return X[self.feature_names].copy()
 
 
 class MultiLabelEncoder(BaseEstimator, TransformerMixin):
@@ -92,6 +93,30 @@ class OutlierExtractor(BaseEstimator, TransformerMixin):
         return self
 
 
+class TitleExtractor(BaseEstimator, TransformerMixin):
+    '''
+    input only accept pandas dataframe
+    '''
+
+    def __init__(self, titles_dict: dict, output: List[str]):
+        self.titles_dict = titles_dict
+        self.output = output
+
+    def fit(self, X, y=None):
+        return self
+
+    def transform(self, X: pd.DataFrame, y=None):
+        # Parse the title from name
+        X['title_cat'] = X['Name'].str.extract(r' ([A-Za-z]+)\.', expand=False)
+        # convert rare title into 'others' and perform ordinal encoding
+        X['title'] = X['title_cat'].apply(
+            lambda x: self.titles_dict[x] if x in self.titles_dict else self.titles_dict['Others']
+        )
+        X.drop(columns=['Name'])
+
+        return X[self.output]
+
+
 def main(output_folder, remove_outlier=False, outlier_detect_params=None, outlier_threshold=-10.0,
          **kwargs):
     # initiate the pipelines
@@ -102,15 +127,22 @@ def main(output_folder, remove_outlier=False, outlier_detect_params=None, outlie
     train_data = pd.read_csv('./Titanic/data/train.csv')
     test_data = pd.read_csv('./Titanic/data/test.csv')
 
+    # prepare the definination of final features
+
+    final_features = {}
+
     # build pipelines
     for idx, key in enumerate(kwargs.keys()):
         sel_cols = key.split(',')
         pipeline = Pipeline([
             ('selector', DataframeSelector(sel_cols))
         ] + [(transformer_name, globals()[transformer_name](**kwargs[key][transformer_name]))
-             for transformer_name in kwargs[key].keys()]
+             for transformer_name in list(kwargs[key].keys())[:-1]]
         )
         pipelines.append((key, pipeline))
+
+        for feature, value in kwargs[key]['output_features'].items():
+            final_features[feature] = value
 
     full_pipeline = FeatureUnion(pipelines)
 
@@ -139,6 +171,26 @@ def main(output_folder, remove_outlier=False, outlier_detect_params=None, outlie
         with open(os.path.join(saved_path, name), 'wb') as f:
             dump(data, f)
 
+    # Save the Config information for documentation purpose:
+    saved_config_file = os.path.join(
+        './Titanic/transformed_data/',
+        output_folder,
+        'configs.json'
+    )
+
+    # add outlier setting for documentation
+    config_kwargs['outlier_setting'] = {
+        'remove_outlier': remove_outlier,
+        'outlier_detect_params': outlier_detect_params,
+        'outlier_threshold': outlier_threshold
+    }
+    # add final output features
+    config_kwargs['final_features'] = final_features
+
+    with open(saved_config_file, 'w') as f:
+        json.dump(config_kwargs, f, indent=4)
+
+
     return None
 
 
@@ -151,38 +203,49 @@ if __name__ == '__main__':
     }
 
     config_kwargs = {
-        'Age,SibSp,Parch,Fare': {
-            'SimpleImputer': {
-                'strategy': 'mean'
-            }
-        },
         'Pclass,Sex,Embarked': {
             'SimpleImputer': {
                 'strategy': 'most_frequent'
             },
             'OrdinalEncoder': {
                 'handle_unknown': 'error'
+            },
+            'output_features': {
+                'Pclass': 'A proxy for socio-economic status (SES)',
+                'Sex': 'Male or Female',
+                'Embarked': 'C = Cherbourg, Q = Queenstown, S = Southampton'
+            }
+        },
+        'Age,Name,SibSp,Parch': {
+            'TitleExtractor': {
+                'titles_dict': {'Master': 0, 'Miss': 1, 'Mrs': 2, 'Mr': 3, 'Others': 4},
+                'output': ['Age', 'title', 'SibSp', 'Parch']
+            },
+            'KNNImputer': {
+                'n_neighbors': 5,
+            },
+            'output_features': {
+                'Age': 'Part is Imputed using KNN method based on title, SibSp, Parch',
+                'Title': 'Master=0, Miss=1, Mrs=2, Mr=3, Others=4',
+                'SibSp': 'number of sister/brother/spouse',
+                'Parch': 'number of children/parent'
+            }
+        },
+        'Fare': {
+            'SimpleImputer': {
+                'strategy': 'mean'
+            },
+            'output_features': {
+                'Fare': 'Passenger fare'
             }
         }
-
-
-
     }
     # save the preprocessed data
-    output_folder = 'second_try'
+    output_folder = 'third_try'
     main(output_folder, **outlier_setting, **config_kwargs)
 
-    # save the config json file for documentation
-    saved_config_file = os.path.join(
-        './Titanic/transformed_data/',
-        output_folder,
-        'configs.json'
-    )
 
-    # add outlier setting for documentation
-    config_kwargs['outlier_setting'] = outlier_setting
-    with open(saved_config_file, 'w') as f:
-        json.dump(config_kwargs, f, indent=4)
+
 
 
 

@@ -63,7 +63,7 @@ class TitanicRfClassifier(SuperviseModel):
 
 
 if __name__=='__main__':
-    xgb_cls = TitanicXgbClassifier('./Titanic/transformed_data/first_try')
+    xgb_cls = TitanicXgbClassifier('./Titanic/transformed_data/third_try')
     xgb_cls_hyperparams = {
 
     }
@@ -72,7 +72,7 @@ if __name__=='__main__':
     print(
         cross_val_score(xgb_cls.model['xgb_cls'], xgb_cls.X_train, xgb_cls.y_train)
     )
-    rf_cls = TitanicRfClassifier('./Titanic/transformed_data/first_try')
+    rf_cls = TitanicRfClassifier('./Titanic/transformed_data/third_try')
 
     ''' obtain a first impression about the model
 

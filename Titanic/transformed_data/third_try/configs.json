@@ -1,0 +1,64 @@
+{
+    "Pclass,Sex,Embarked": {
+        "SimpleImputer": {
+            "strategy": "most_frequent"
+        },
+        "OrdinalEncoder": {
+            "handle_unknown": "error"
+        },
+        "output_features": {
+            "Pclass": "A proxy for socio-economic status (SES)",
+            "Sex": "Male or Female",
+            "Embarked": "C = Cherbourg, Q = Queenstown, S = Southampton"
+        }
+    },
+    "Age,Name,SibSp,Parch": {
+        "TitleExtractor": {
+            "titles_dict": {
+                "Master": 0,
+                "Miss": 1,
+                "Mrs": 2,
+                "Mr": 3,
+                "Others": 4
+            },
+            "output": [
+                "Age",
+                "title",
+                "SibSp",
+                "Parch"
+            ]
+        },
+        "KNNImputer": {
+            "n_neighbors": 5
+        },
+        "output_features": {
+            "Age": "Part is Imputed using KNN method based on title, SibSp, Parch",
+            "Title": "Master=0, Miss=1, Mrs=2, Mr=3, Others=4",
+            "SibSp": "number of sister/brother/spouse",
+            "Parch": "number of children/parent"
+        }
+    },
+    "Fare": {
+        "SimpleImputer": {
+            "strategy": "mean"
+        },
+        "output_features": {
+            "Fare": "Passenger fare"
+        }
+    },
+    "outlier_setting": {
+        "remove_outlier": false,
+        "outlier_detect_params": null,
+        "outlier_threshold": -10.0
+    },
+    "final_features": {
+        "Pclass": "A proxy for socio-economic status (SES)",
+        "Sex": "Male or Female",
+        "Embarked": "C = Cherbourg, Q = Queenstown, S = Southampton",
+        "Age": "Part is Imputed using KNN method based on title, SibSp, Parch",
+        "Title": "Master=0, Miss=1, Mrs=2, Mr=3, Others=4",
+        "SibSp": "number of sister/brother/spouse",
+        "Parch": "number of children/parent",
+        "Fare": "Passenger fare"
+    }
+}
