@@ -9,13 +9,12 @@ import os
 
 
 class BaseProcessor:
-    def __init__(self, raw_data_train: str, raw_data_test: str, target: str,
-                 project_transformed_data_path: str):
-        self.train_data = pd.read_csv(raw_data_train)
-        self.test_data = pd.read_csv(raw_data_test)
+    def __init__(self,):
+        self.train_data = None
+        self.test_data = None
         self.final_features = {}
-        self.target = target
-        self.project_folder = project_transformed_data_path
+        self.target = None
+        self.project_folder = None
 
     def process(self, output_folder, remove_outlier=False,
                 outlier_detect_params=None, outlier_threshold=-10.0,
