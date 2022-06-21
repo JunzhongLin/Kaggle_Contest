@@ -12,6 +12,7 @@ from sklearn.impute import SimpleImputer, KNNImputer
 from sklearn.neighbors import LocalOutlierFactor
 import pickle, json
 from joblib import load, dump
+from src.base_preprocess import BaseProcessor
 
 
 class DataframeSelector(BaseEstimator, TransformerMixin):
@@ -26,6 +27,21 @@ class DataframeSelector(BaseEstimator, TransformerMixin):
 
     def transform(self, X: pd.DataFrame, y=None):
         return X[self.feature_names].copy()
+
+
+class ArraySelector(BaseEstimator, TransformerMixin):
+    '''
+    # select sepecific feature columns from  np.array
+    '''
+
+    def __init__(self, col_idx: List[int]):
+        self.col_idx = col_idx
+
+    def fit(self, X, y=None):
+        return self
+
+    def transform(self, X, y=None):
+        return X[:, self.col_idx]
 
 
 class MultiLabelEncoder(BaseEstimator, TransformerMixin):
@@ -117,6 +133,29 @@ class TitleExtractor(BaseEstimator, TransformerMixin):
         return X[self.output]
 
 
+class AloneChecker(BaseEstimator, TransformerMixin):
+    def __init__(self, output=List[str]):
+        self.output = output
+
+    def fit(self, X, y=None):
+        return self
+
+    def transform(self, X: pd.DataFrame, y=None):
+        X[self.output[0]] = X.apply(lambda x: 1 if x[0]+x[1] != 0 else 0, axis=1)
+        return X[self.output].values
+
+
+class DataProcessor(BaseProcessor):
+    def __init__(self, raw_data_train: str, raw_data_test: str, target: str,
+                 project_transformed_data_path: str):
+        super(DataProcessor, self).__init__()
+        self.train_data = pd.read_csv(raw_data_train)
+        self.test_data = pd.read_csv(raw_data_test)
+        self.target = target
+        self.project_folder = project_transformed_data_path
+        self.global_dict = globals()
+
+'''
 def main(output_folder, remove_outlier=False, outlier_detect_params=None, outlier_threshold=-10.0,
          **kwargs):
     # initiate the pipelines
@@ -190,8 +229,9 @@ def main(output_folder, remove_outlier=False, outlier_detect_params=None, outlie
     with open(saved_config_file, 'w') as f:
         json.dump(config_kwargs, f, indent=4)
 
-
     return None
+'''
+
 
 
 if __name__ == '__main__':
@@ -204,6 +244,9 @@ if __name__ == '__main__':
 
     config_kwargs = {
         'Pclass,Sex,Embarked': {
+            'DataframeSelector': {
+                'feature_names': ['Pclass', 'Sex', 'Embarked']
+            },
             'SimpleImputer': {
                 'strategy': 'most_frequent'
             },
@@ -217,6 +260,9 @@ if __name__ == '__main__':
             }
         },
         'Age,Name,SibSp,Parch': {
+            'DataframeSelector': {
+                'feature_names': ['Age', 'Name', 'SibSp', 'Parch']
+            },
             'TitleExtractor': {
                 'titles_dict': {'Master': 0, 'Miss': 1, 'Mrs': 2, 'Mr': 3, 'Others': 4},
                 'output': ['Age', 'title', 'SibSp', 'Parch']
@@ -224,25 +270,53 @@ if __name__ == '__main__':
             'KNNImputer': {
                 'n_neighbors': 5,
             },
+            'ArraySelector': {
+                'col_idx': [0, 1]
+            },
             'output_features': {
                 'Age': 'Part is Imputed using KNN method based on title, SibSp, Parch',
                 'Title': 'Master=0, Miss=1, Mrs=2, Mr=3, Others=4',
-                'SibSp': 'number of sister/brother/spouse',
-                'Parch': 'number of children/parent'
+                # 'SibSp': 'number of sister/brother/spouse',
+                # 'Parch': 'number of children/parent'
             }
         },
         'Fare': {
+            'DataframeSelector': {
+                'feature_names': ['Fare']
+            },
             'SimpleImputer': {
                 'strategy': 'mean'
             },
             'output_features': {
                 'Fare': 'Passenger fare'
             }
+        },
+        'IsAlone': {
+            'DataframeSelector': {
+                'feature_names': ['SibSp', 'Parch']
+            },
+            'AloneChecker': {
+                'output': ['IsAlone']
+            },
+            'output_features': {
+                'IsAlone': '0 for alone, 1 for not alone'
+            }
         }
     }
+
     # save the preprocessed data
-    output_folder = 'third_try'
-    main(output_folder, **outlier_setting, **config_kwargs)
+    processor = DataProcessor(
+        raw_data_train='./Titanic/data/train.csv',
+        raw_data_test='./Titanic/data/test.csv',
+        target='Survived',
+        project_transformed_data_path='./Titanic/transformed_data/'
+    )
+
+    processor.process(
+        output_folder='fourth_try',
+        **outlier_setting,
+        **config_kwargs
+    )
 
 
 

@@ -1,5 +1,12 @@
 {
     "Pclass,Sex,Embarked": {
+        "DataframeSelector": {
+            "feature_names": [
+                "Pclass",
+                "Sex",
+                "Embarked"
+            ]
+        },
         "SimpleImputer": {
             "strategy": "most_frequent"
         },
@@ -13,6 +20,14 @@
         }
     },
     "Age,Name,SibSp,Parch": {
+        "DataframeSelector": {
+            "feature_names": [
+                "Age",
+                "Name",
+                "SibSp",
+                "Parch"
+            ]
+        },
         "TitleExtractor": {
             "titles_dict": {
                 "Master": 0,
@@ -31,19 +46,44 @@
         "KNNImputer": {
             "n_neighbors": 5
         },
+        "ArraySelector": {
+            "col_idx": [
+                0,
+                1
+            ]
+        },
         "output_features": {
             "Age": "Part is Imputed using KNN method based on title, SibSp, Parch",
-            "Title": "Master=0, Miss=1, Mrs=2, Mr=3, Others=4",
-            "SibSp": "number of sister/brother/spouse",
-            "Parch": "number of children/parent"
+            "Title": "Master=0, Miss=1, Mrs=2, Mr=3, Others=4"
         }
     },
     "Fare": {
+        "DataframeSelector": {
+            "feature_names": [
+                "Fare"
+            ]
+        },
         "SimpleImputer": {
             "strategy": "mean"
         },
         "output_features": {
             "Fare": "Passenger fare"
+        }
+    },
+    "IsAlone": {
+        "DataframeSelector": {
+            "feature_names": [
+                "SibSp",
+                "Parch"
+            ]
+        },
+        "AloneChecker": {
+            "output": [
+                "IsAlone"
+            ]
+        },
+        "output_features": {
+            "IsAlone": "0 for alone, 1 for not alone"
         }
     },
     "outlier_setting": {
@@ -57,8 +97,7 @@
         "Embarked": "C = Cherbourg, Q = Queenstown, S = Southampton",
         "Age": "Part is Imputed using KNN method based on title, SibSp, Parch",
         "Title": "Master=0, Miss=1, Mrs=2, Mr=3, Others=4",
-        "SibSp": "number of sister/brother/spouse",
-        "Parch": "number of children/parent",
-        "Fare": "Passenger fare"
+        "Fare": "Passenger fare",
+        "IsAlone": "0 for alone, 1 for not alone"
     }
 }

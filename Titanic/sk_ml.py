@@ -4,9 +4,10 @@ import xgboost as xgb
 from joblib import dump, load
 import os
 from src.base_models import SuperviseModel
-from sklearn.model_selection import cross_val_score
+from sklearn.model_selection import cross_val_score, cross_validate
 from sklearn.metrics import f1_score, accuracy_score
 from sklearn.ensemble import RandomForestClassifier
+import pandas as pd
 
 
 class TitanicXgbClassifier(SuperviseModel):
@@ -63,19 +64,30 @@ class TitanicRfClassifier(SuperviseModel):
 
 
 if __name__=='__main__':
-    xgb_cls = TitanicXgbClassifier('./Titanic/transformed_data/third_try')
+    xgb_cls = TitanicXgbClassifier('./Titanic/transformed_data/fourth_try')
+    test_df = pd
     xgb_cls_hyperparams = {
 
     }
-
+    score = cross_validate(xgb_cls.model['xgb_cls'], xgb_cls.X_train, xgb_cls.y_train,
+                           return_train_score=True)
     print('cv_score from xgb: \n')
     print(
-        cross_val_score(xgb_cls.model['xgb_cls'], xgb_cls.X_train, xgb_cls.y_train)
+        'train_score: ', score['train_score']
     )
-    rf_cls = TitanicRfClassifier('./Titanic/transformed_data/third_try')
+    print(' ')
+    print(
+        'test_score: ', score['test_score']
+    )
+    rf_cls = TitanicRfClassifier('./Titanic/transformed_data/fourth_try')
 
     ''' obtain a first impression about the model
 
 
     '''
+    '''
+    submission = pd.DataFrame({"PassengerId": test_df.["PassengerId"],
+                                "Survived": y_pred})
+    '''
+
 
