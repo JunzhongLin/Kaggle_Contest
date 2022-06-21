@@ -40,9 +40,9 @@ class BaseProcessor:
         full_pipeline = FeatureUnion(pipelines)
 
         # Generate train, test set
-        X_data = self.train_data.append(self.test_data)
-        full_pipeline.fit(X_data)
-        self.X_train = full_pipeline.transform(self.train_data)
+        # X_data = self.train_data.append(self.test_data) ## possible data leakage !!
+        # full_pipeline.fit(X_data)
+        self.X_train = full_pipeline.fit_transform(self.train_data)
         self.y_train = self.train_data[self.target].values
         self.X_test = full_pipeline.transform(self.test_data)
 
