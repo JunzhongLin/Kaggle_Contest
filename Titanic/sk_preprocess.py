@@ -18,6 +18,8 @@ from sklearn.ensemble import RandomForestClassifier
 from joblib import load, dump
 import os
 
+from src.base_preprocess import BaseSkProcessor, ArraySelector
+
 
 class SkPreprocessor(BaseSkProcessor):
 
