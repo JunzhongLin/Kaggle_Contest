@@ -1,5 +1,41 @@
 # This a file contains some base class
 from sklearn.model_selection import GridSearchCV
+import numpy as np
+from sklearn.model_selection import KFold, cross_val_score, train_test_split
+from sklearn.metrics import mean_squared_error
+from sklearn.base import BaseEstimator, TransformerMixin, RegressorMixin, clone
+
+
+def rmsle(y, y_pred):
+    return np.sqrt(mean_squared_error(y, y_pred))
+
+
+def rmsle_cv(model, X, y, n_folds=5):
+    kf = KFold(n_folds, shuffle=True, random_state=42).get_n_splits(X)
+    rmse= np.sqrt(-cross_val_score(model, X, y, scoring="neg_mean_squared_error", cv = kf))
+    return(rmse)
+
+
+class AveragingModels(BaseEstimator, RegressorMixin, TransformerMixin):
+    def __init__(self, models):
+        self.models = models
+
+    # we define clones of the original models to fit the data in
+    def fit(self, X, y):
+        self.models_ = [clone(x) for x in self.models]
+
+        # Train cloned base models
+        for model in self.models_:
+            model.fit(X, y)
+
+        return self
+
+    # Now we do the predictions for cloned models and average them
+    def predict(self, X):
+        predictions = np.column_stack([
+            model.predict(X) for model in self.models_
+        ])
+        return np.mean(predictions, axis=1)
 
 
 class SuperviseModel:
