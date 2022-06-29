@@ -118,4 +118,5 @@ if __name__ == '__main__':
 
     dummy_model = RandomForestClassifier()
     p = SkPreprocessor(**config_kwargs)
+    p.sk_preprocess()
 
