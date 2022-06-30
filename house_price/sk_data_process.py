@@ -230,7 +230,7 @@ class HousePriceProcess(BaseSkProcessor):
         y_train = self.train_data[self.target].copy()
         train_data = self.train_data.drop(self.target, axis=1).copy()
         test_data = self.test_data.copy()
-        full_data = pd.concat([train_data, test_data], axis=0)
+        full_data = pd.concat([train_data, test_data], axis=0, ignore_index=True)
         X_full = full_data.copy()
         y_train = self.train_data[['Id', 'SalePrice']].copy()
 
@@ -261,6 +261,7 @@ class HousePriceProcess(BaseSkProcessor):
 
         # drop outlier
         index_to_drop = self._check_outlier(self.train_data, len_train)
+        # print('index_dropped: ', index_to_drop)
         X_full.drop(index=index_to_drop, inplace=True)
         y_train.drop(index=index_to_drop, inplace=True)
 
@@ -303,7 +304,6 @@ class HousePriceProcess(BaseSkProcessor):
         self.cols_to_encode = cols_to_encode
         self.X_full = X_full.drop(['Id', 'MiscVal'], axis=1)   # remove the Id column
         self.train_X = self.X_full.iloc[:len_train, :]
-        print(self.train_X.shape)
         self.test_X = self.X_full.iloc[len_train:, :]
         self.train_y = y_train['SalePrice_log']
         self.len_train, self.len_test = len_train, len_test

@@ -7,12 +7,11 @@ from sklearn.model_selection import KFold, cross_val_score, train_test_split, Gr
 from sklearn.metrics import mean_squared_error
 from sklearn.base import BaseEstimator, TransformerMixin, RegressorMixin, clone
 import xgboost as xgb
-from src.base_models import SuperviseModel
+from src.base_models import SuperviseModel, rmsle_cv, rmsle
 from joblib import dump, load
 import os
 import pandas as pd
 import numpy as np
-random_seed = 42
 
 
 class HousePriceReg(SuperviseModel):
@@ -20,7 +19,7 @@ class HousePriceReg(SuperviseModel):
     def __init__(self, data_path):
         super(HousePriceReg, self).__init__()
         self.data_path = data_path
-        self.models = {}
+        self.model = {}
         self._init_data()
         self._init_regressor()
 
@@ -30,9 +29,9 @@ class HousePriceReg(SuperviseModel):
         self.y_train = load(os.path.join(self.data_path, 'y_train.pkl'))
 
     def _init_regressor(self):
-        lasso = make_pipeline(RobustScaler(), Lasso(alpha=0.005, random_state=1))
+        lasso = make_pipeline(RobustScaler(), Lasso(alpha=0.01, random_state=1))
 
-        ENet = make_pipeline(RobustScaler(), ElasticNet(alpha=0.005, l1_ratio=.9, random_state=3))
+        ENet = make_pipeline(RobustScaler(), ElasticNet(alpha=0.01, l1_ratio=.9, random_state=3))
 
         KRR = KernelRidge()
 
@@ -48,7 +47,7 @@ class HousePriceReg(SuperviseModel):
                                      subsample=0.5213, random_state=7, nthread=-1)
         voting = VotingRegressor(
             estimators=[
-                ('lasso', clone(Lasso)),
+                ('lasso', clone(lasso)),
                 ('enet', clone(ENet)),
                 ('KRR', clone(KRR)),
                 ('gboost', clone(GBoost)),
@@ -56,7 +55,7 @@ class HousePriceReg(SuperviseModel):
             ],
             weights=[0.15, 0.15, 0.3, 0.2, 0.3]
         )
-        self.models = {
+        self.model = {
             'lasso': lasso,
             'ENet': ENet,
             'KRR': KRR,
@@ -73,7 +72,7 @@ class HousePriceReg(SuperviseModel):
         return None
 
     def prepare_submission(self, model_name):
-        y_pred = np.expm1(self.models[model_name].predict(self.X_test))
+        y_pred = np.expm1(self.model[model_name].predict(self.X_test))
 
         test_df = pd.read_csv('./house_price/data/test.csv')
         submission_df = pd.DataFrame(
@@ -89,7 +88,10 @@ class HousePriceReg(SuperviseModel):
 
 if __name__ == '__main__':
     house_price_model = HousePriceReg('./house_price/transformed_data/2022-06-29')
+    # house_price_model.model_train('voting', {})
     house_price_model.model_train('voting', {})
+    house_price_model.prepare_submission('voting')
+
 
 
 
